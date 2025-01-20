@@ -1,0 +1,21 @@
+@font-face {
+    font-family: 'AirbnbCerealBold';
+    src: url('./assets/fonts/AirbnbCereal_W_XBd.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'AirbnbCerealMedium';
+    src: url('./assets/fonts/AirbnbCereal_W_Md.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+  }
+  
+  @font-face {
+    font-family: 'AirbnbCerealLight';
+    src: url('./assets/fonts/AirbnbCereal_W_Lt.otf') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+  }
+  
