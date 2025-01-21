@@ -4,60 +4,40 @@ declare global {
   }
 }
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { GoogleLogin } from "@react-oauth/google";
 import api from "../../utils/api";
+import { useDispatch } from "react-redux";
+import { setUser } from "../../redux/slices/authSlice";
+import toast from "react-hot-toast";
 
 interface AuthProps {
   onClose: () => void;
-  onContinue: (email: string) => void; // Pass email to the parent when continuing
+  onContinue: (email: string) => void;
 }
 
 const Auth: React.FC<AuthProps> = ({ onClose, onContinue }) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    const loadGoogleScript = () => {
-      const existingScript = document.querySelector(
-        'script[src="https://accounts.google.com/gsi/client"]'
-      );
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.defer = true;
-        document.body.appendChild(script);
+  const dispatch = useDispatch();
 
-        script.onload = () => {
-          window.google?.accounts.id.initialize({
-            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-            callback: handleGoogleSignIn,
-          });
-
-          window.google?.accounts.id.renderButton(
-            document.getElementById("googleSignIn"),
-            { theme: "outline", size: "large", width: "100%" }
-          );
-        };
-      }
-    };
-
-    loadGoogleScript();
-  }, []);
-
-  const handleGoogleSignIn = async (response: any) => {
+  const handleGoogleSignIn = async (credentialResponse: any) => {
     try {
-      const { data } = await api.post("/api/auth/google", {
-        credential: response.credential,
-      });
+      const { credential } = credentialResponse;
 
-      localStorage.setItem("token", data.token);
-      setError("");
-      onContinue(email); // Notify parent of successful Google sign-in
+      const { data } = await api.post("/api/auth/google", {
+        credential,
+      });
+      console.log(data);
+      dispatch(setUser({ user: data?.user, token: data?.token }));
+      toast.success(data?.message);
+      onClose();
     } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to sign in with Google.");
+      toast.error(
+        err.response?.data?.error || "Failed to sign in with Google."
+      );
     }
   };
 
@@ -66,17 +46,17 @@ const Auth: React.FC<AuthProps> = ({ onClose, onContinue }) => {
     if (!email) return;
 
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setError("Please enter a valid email address.");
+      toast.success("Please enter a valid email address.");
       return;
     }
 
     setLoading(true);
     try {
-      await api.post("/api/auth/send-otp", { email });
-      setError("");
+      const response = await api.post("/api/auth/send-otp", { email });
+      console.log(response.data);
       onContinue(email); // Pass email to parent to show OTP screen
     } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to send OTP.");
+      toast.error(err.response?.data?.error || "Failed to send OTP.");
     } finally {
       setLoading(false);
     }
@@ -94,13 +74,19 @@ const Auth: React.FC<AuthProps> = ({ onClose, onContinue }) => {
           >
             <IoMdClose className="text-lg" />
           </button>
-          <h3 className="text-lg font-medium text-center flex-1">Log in or Sign up</h3>
+          <h3 className="text-lg font-medium text-center flex-1">
+            Log in or Sign up
+          </h3>
         </div>
 
         <form onSubmit={handleEmailSubmit} className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold mb-2 text-gray-800">Welcome to BookMyVenue</h2>
-            <p className="text-sm text-gray-500">Log in or sign up to continue.</p>
+            <h2 className="text-2xl font-bold mb-2 text-gray-800">
+              Welcome to BookMyVenue
+            </h2>
+            <p className="text-sm text-gray-500">
+              Log in or sign up to continue.
+            </p>
           </div>
 
           {/* Email Input */}
@@ -115,9 +101,9 @@ const Auth: React.FC<AuthProps> = ({ onClose, onContinue }) => {
               type="email"
               id="email"
               value={email}
+              required
               onChange={(e) => {
                 setEmail(e.target.value);
-                setError(""); // Clear error on input change
               }}
               placeholder="Enter your email"
               className="w-full mt-1 p-2 border rounded-md focus:ring-primary focus:border-primary outline-none"
@@ -141,7 +127,8 @@ const Auth: React.FC<AuthProps> = ({ onClose, onContinue }) => {
               and the{" "}
               <a href="#" className="text-primary underline">
                 terms of service
-              </a>.
+              </a>
+              .
             </p>
           </div>
 
@@ -149,7 +136,7 @@ const Auth: React.FC<AuthProps> = ({ onClose, onContinue }) => {
           <button
             type="submit"
             disabled={loading || !email}
-            className={`w-full py-2 text-white font-medium rounded-md ${
+            className={`w-full py-2 text-white font-medium rounded-md cursor-pointer ${
               loading
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-primary hover:bg-primary-dark active:scale-95"
@@ -165,17 +152,15 @@ const Auth: React.FC<AuthProps> = ({ onClose, onContinue }) => {
           <span className="mx-4 text-sm text-gray-500">or</span>
           <div className="h-px bg-gray-300 flex-1"></div>
         </div>
-        <div id="googleSignIn" className="w-full"></div>
-
-        {/* Error Message */}
-        {error && (
-          <div
-            className="mt-4 text-sm text-red-500"
-            aria-live="assertive"
-          >
-            {error}
-          </div>
-        )}
+        <GoogleLogin
+          onSuccess={handleGoogleSignIn}
+          onError={() => {
+            toast.error("Google sign-in failed. Please try again.");
+          }}
+          text="continue_with" 
+          shape="rectangular"
+          size="large"
+        />
       </div>
     </div>
   );

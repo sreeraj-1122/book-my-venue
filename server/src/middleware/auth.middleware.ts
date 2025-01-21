@@ -9,15 +9,18 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // Retrieve the token from cookies
+    const token = req.cookies?.authToken;
 
     if (!token) {
       res.status(401).json({ error: 'Authentication required' });
       return;
     }
 
+    // Verify the token
     const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
+
+    // Find the user in the database
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -25,9 +28,11 @@ export const authenticateToken = async (
       return;
     }
 
+    // Attach the user object to the request
     req.user = user;
     next();
   } catch (error) {
+    console.error('Authentication error:', error);
     res.status(401).json({ error: 'Invalid token' });
   }
 };

@@ -1,12 +1,19 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import cookieParser from "cookie-parser";
+
 import { config } from './config';
 import authRoutes from './routes/auth.routes';
-
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: config.clienturl, // Frontend URL
+    credentials: true, // Allow cookies
+  })
+);
+app.use(cookieParser());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 

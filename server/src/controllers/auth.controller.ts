@@ -78,8 +78,12 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     // Delete used OTP
     await OTP.deleteOne({ _id: otpDoc._id });
 
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      sameSite: "strict",
+    });
     res.json({
-      message: 'Email verified successfully',
+      message: 'Signed in successfully',
       token,
       user: {
         _id: user._id,

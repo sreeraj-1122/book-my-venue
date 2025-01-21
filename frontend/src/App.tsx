@@ -1,10 +1,14 @@
-import { RouterProvider } from "react-router-dom"
-import router from "./routes/route"
-import './fonts.css'
+import { RouterProvider } from "react-router-dom";
+import router from "./routes/route";
+import "./fonts.css";
+import { Toaster } from "react-hot-toast";
 const App = () => {
   return (
-       <RouterProvider router={router} />
-  )
-}
+    <>
+      <Toaster position="bottom-center" reverseOrder={false} />
+      <RouterProvider router={router} />
+    </>
+  );
+};
 
-export default App
+export default App;

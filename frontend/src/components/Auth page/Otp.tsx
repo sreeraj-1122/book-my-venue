@@ -1,31 +1,33 @@
 import React, { useState } from "react";
 import { IoMdArrowBack } from "react-icons/io";
+import { useDispatch } from "react-redux"; 
 import api from "../../utils/api";
+import { setUser } from "../../redux/slices/authSlice";
+import toast from "react-hot-toast";
 
 type Props = {
   onBack: () => void;
   onVerified: () => void; // Notify parent when OTP is successfully verified
-  email: string; // The email to verify OTP for
+  email: string; 
 };
 
 const Otp: React.FC<Props> = ({ onBack, onVerified, email }) => {
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
-  const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  
+  const dispatch = useDispatch(); 
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     index: number
   ) => {
     const value = e.target.value;
-    if (/[^0-9]/.test(value)) return; // Only allow digits
+    if (/[^0-9]/.test(value)) return; 
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Clear error on input change
-    if (error) setError("");
 
     // Automatically focus the next input field
     if (value && index < otp.length - 1) {
@@ -39,17 +41,19 @@ const Otp: React.FC<Props> = ({ onBack, onVerified, email }) => {
   const handleSubmit = async () => {
     const otpCode = otp.join(""); // Combine the OTP digits
     if (otpCode.length !== 6) {
-      setError("Please enter a valid 6-digit OTP.");
+      toast.error("Please enter a valid 6-digit OTP.");
       return;
     }
 
     setLoading(true);
     try {
-      await api.post("/api/auth/verify-otp", { email, otp: otpCode });
-      setError("");
-      onVerified(); // Notify parent that OTP is successfully verified
+      const response = await api.post("/api/auth/verify-otp", { email, otp: otpCode });
+      console.log(response.data.user); 
+      dispatch(setUser({user:response.data.user,token:response.data.token})); 
+      toast.success(response.data.message)
+      onVerified(); 
     } catch (err: any) {
-      setError(err?.response?.data?.error || "Failed to verify OTP.");
+      toast.error(err?.response?.data?.error || "Failed to verify OTP.");
     } finally {
       setLoading(false);
     }
@@ -93,10 +97,6 @@ const Otp: React.FC<Props> = ({ onBack, onVerified, email }) => {
           ))}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="text-red-500 text-sm text-center mt-2">{error}</div>
-        )}
 
         {/* Submit Button */}
         <div className="mt-5">

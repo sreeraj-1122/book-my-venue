@@ -3,13 +3,17 @@ import { Link, useLocation } from "react-router-dom";
 import Logo from "./Logo";
 import Auth from "../Auth page/Auth";
 import Otp from "../Auth page/Otp";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/store";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string>("");
-
+  const { user, token } = useSelector((state: RootState) => state.auth);
+  
+  console.log(`user nav ${user} ,--, token: ${token}`);
   const routes = [
     { name: "My Booking", path: "/my-booking" },
     { name: "Profile", path: "/profile" },
@@ -17,7 +21,6 @@ const Navbar: React.FC = () => {
   ];
 
   const handleAuthComplete = (email: string) => {
-    // Store email and open OTP modal
     setUserEmail(email);
     setShowAuthModal(false);
     setShowOtpModal(true);
@@ -30,7 +33,6 @@ const Navbar: React.FC = () => {
   };
 
   const handleOtpVerified = () => {
-    // Close OTP modal upon successful verification
     setShowOtpModal(false);
   };
 
@@ -53,20 +55,28 @@ const Navbar: React.FC = () => {
             </Link>
           ))}
         </div>
-        <div className="flex items-center gap-6 mr-8">
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="font-medium px-5 h-9 py-1 text-bgPrimary border border-gray-200 rounded-2xl hover:bg-gray-100 hover:shadow-sm"
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="font-medium px-5 h-9 py-1 text-bgPrimary border border-gray-200 rounded-2xl hover:bg-gray-100 hover:shadow-sm"
-          >
-            Sign in
-          </button>
-        </div>
+        {token ? (
+          <img
+          src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png"
+          className="w-10 h-10 rounded-full object-fill"
+        />
+        ) : (
+          <div className="flex items-center gap-6 mr-8">
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="font-medium px-5 h-9 py-1 text-bgPrimary border border-gray-200 rounded-2xl hover:bg-gray-100 hover:shadow-sm"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="font-medium px-5 h-9 py-1 text-bgPrimary border border-gray-200 rounded-2xl hover:bg-gray-100 hover:shadow-sm"
+            >
+              Sign in
+            </button>
+          </div>
+          
+        )}
       </div>
 
       {/* Render Auth Modal */}
