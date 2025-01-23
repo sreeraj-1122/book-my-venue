@@ -1,19 +1,20 @@
 import { createBrowserRouter } from "react-router-dom";
-import CommonLayout from "../Layouts/CommonLayout";
-import HomePage from "../pages/Home Page/HomePage";
-import MyBooking from "../pages/Booking Page/MyBooking";
-import ProfilePage from './../pages/Profile Page/ProfilePage';
-import WishlistPage from "../pages/Wishlist Page/WishlistPage";
+import HomePage from "../pages/public/HomePage";
+import PublicLayout from "../Layouts/PublicLayout";
+import TermsOfService from "../pages/public/TermsOfService";
+import PrivacyPolicy from "../pages/public/privacyPolicy";
+import CancelAndRefund from "../pages/public/CancelAndRefund";
+
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <CommonLayout />,
+    element: <PublicLayout />,
     children: [
-      { path: "", element: <HomePage /> }, // Default route
-          { path: 'my-booking', element: <MyBooking /> },
-          { path: 'profile', element: <ProfilePage /> },
-          { path: 'Wishlists', element: <WishlistPage /> },
+      { path: "", element: <HomePage /> },
+      { path: 'terms-of-service', element: <TermsOfService /> },
+			{ path: 'privacy-policy', element: <PrivacyPolicy /> },
+			{ path: 'cancel-refund-policy', element: <CancelAndRefund /> },
     ],
   },
   {

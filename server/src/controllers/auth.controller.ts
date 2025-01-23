@@ -85,11 +85,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     res.json({
       message: 'Signed in successfully',
       token,
-      user: {
-        _id: user._id,
-        email: user.email,
-        verified: user.verified
-      }
+      user
     });
   } catch (error) {
     console.error('Verify OTP error:', error);
@@ -109,11 +105,16 @@ export const googleSignIn = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    // Split name into first and last names
+    const [firstName, ...lastNameParts] = payload.name?.split(' ') || [];
+    const lastName = lastNameParts.join(' '); // Handle cases where the last name has multiple parts
+
     // Create or update user
     const user = await User.findOneAndUpdate(
       { email: payload.email },
       {
-        name: payload.name,
+        firstName,
+        lastName,
         picture: payload.picture,
         googleId: payload.sub,
         verified: true
@@ -134,7 +135,8 @@ export const googleSignIn = async (req: Request, res: Response): Promise<void> =
       user: {
         _id: user._id,
         email: user.email,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         picture: user.picture,
         verified: user.verified
       }
@@ -144,6 +146,54 @@ export const googleSignIn = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ error: 'Failed to sign in with Google' });
   }
 };
+
+export const updateUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
+    }
+
+    const userId = req.user._id; // The ID of the authenticated user
+    const { firstName, lastName, phone, role } = req.body; // Fields to update
+
+    // Validate input: Check if at least one field is provided for update
+    if (!firstName && !lastName && !phone && !role) {
+      res.status(400).json({ error: 'Please fill all fields' });
+      return;
+    }
+
+    // Prepare the update object dynamically
+    const updates: Partial<Record<string, string>> = {};
+    if (firstName) updates.firstName = firstName;
+    if (lastName) updates.lastName = lastName;
+    if (phone) updates.phone = phone;
+    if (role) updates.role = role;
+
+    // Update the user record in the database
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true } // Return the updated document and validate inputs
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.status(200).json({
+      message: 'User updated successfully',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+};
+
+
+
 
 export const getMe = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -155,8 +205,8 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     res.json({
       user: {
         _id: req.user._id,
-        email: req.user.email,
-        name: req.user.name,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
         picture: req.user.picture,
         verified: req.user.verified
       }
