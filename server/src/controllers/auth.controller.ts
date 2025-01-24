@@ -5,6 +5,7 @@ import User from '../models/user.model';
 import OTP from '../models/otp.model';
 import { sendOTPEmail } from '../utils/email';
 import { verifyGoogleToken } from '../utils/google';
+import cloudinary from '../config/cloudinary';
 
 const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -28,7 +29,7 @@ export const sendOTP = async (req: Request, res: Response): Promise<void> => {
     await OTP.findOneAndUpdate(
       { email },
       { 
-        code: otp,
+        otp: otp,
         expiresAt,
         createdAt: new Date()
       },
@@ -52,7 +53,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     // Find OTP in database
     const otpDoc = await OTP.findOne({
       email,
-      code: otp,
+      otp: otp,
       expiresAt: { $gt: new Date() }
     });
 
@@ -147,50 +148,57 @@ export const googleSignIn = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ error: 'User not authenticated' });
-      return;
-    }
-
-    const userId = req.user._id; // The ID of the authenticated user
-    const { firstName, lastName, phone, role } = req.body; // Fields to update
-
-    // Validate input: Check if at least one field is provided for update
-    if (!firstName && !lastName && !phone && !role) {
-      res.status(400).json({ error: 'Please fill all fields' });
-      return;
-    }
-
-    // Prepare the update object dynamically
-    const updates: Partial<Record<string, string>> = {};
-    if (firstName) updates.firstName = firstName;
-    if (lastName) updates.lastName = lastName;
-    if (phone) updates.phone = phone;
-    if (role) updates.role = role;
-
-    // Update the user record in the database
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: updates },
-      { new: true, runValidators: true } // Return the updated document and validate inputs
-    );
-
-    if (!updatedUser) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-
-    res.status(200).json({
-      message: 'User updated successfully',
-      user: updatedUser,
-    });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
-  }
-};
+export const updateUser = async (req: Request, res: Response): Promise<void> => {   
+  try {     
+    if (!req.user) {       
+      res.status(401).json({ error: 'User not authenticated' });       
+      return;     
+    }       
+ 
+    const userId = req.user._id;     
+    const { firstName, lastName, phone, role } = req.body;       
+ 
+    // Prepare update object dynamically
+    const updateData: any = { 
+      firstName, 
+      lastName, 
+      phone, 
+      role 
+    };
+ 
+    // Handle profile image upload
+    if (req.file) {       
+      const result = await cloudinary.uploader.upload(req.file.path, {         
+        folder: 'profile-images',         
+        transformation: [           
+          { width: 500, height: 500, crop: 'fill' },           
+          { quality: 'auto' }         
+        ]       
+      });         
+      updateData.picture = result.secure_url;     
+    }       
+ 
+    // Update the user record
+    const updatedUser = await User.findByIdAndUpdate(       
+      userId,       
+      updateData,       
+      { new: true, runValidators: true }     
+    );       
+ 
+    if (!updatedUser) {       
+      res.status(404).json({ error: 'User not found' });       
+      return;     
+    }       
+ 
+    res.status(200).json({       
+      message: 'User updated successfully',       
+      user: updatedUser     
+    });   
+  } catch (error) {     
+    console.error('Error updating user:', error);     
+    res.status(500).json({ error: 'Failed to update user' });   
+  }  
+ };
 
 
 
@@ -202,17 +210,22 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    res.json({
-      user: {
-        _id: req.user._id,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
-        picture: req.user.picture,
-        verified: req.user.verified
-      }
+    res.status(200).json({
+      user:req.user
     });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user data' });
   }
 };
+
+
+// : {
+//   _id: req.user._id,
+//   firstName: req.user.firstName,
+//   lastName: req.user.lastName,
+//   picture: req.user.picture,
+//   phone: req.user.phone,
+//   role: req.user.role,
+//   verified: req.user.verified
+// }

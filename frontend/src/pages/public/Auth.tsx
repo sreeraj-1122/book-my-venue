@@ -25,7 +25,7 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
   const [isChecked, setIsChecked] = useState<boolean>(false);
   const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
   const [isNewUser, setIsNewUser] = useState<boolean>(false);
-  // const [newUser, setNewUser] = useState({});
+  const [newUser, setNewUser] = useState({});
   const dispatch = useDispatch();
 
   const handleGoogleSignIn = async (credentialResponse: any) => {
@@ -37,8 +37,9 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
       });
       console.log(data);
       dispatch(setUser({ user: data?.user, token: data?.token }));
-      toast.success(data?.message);
+      setNewUser(data?.user)
       setIsNewUser(true);
+      toast.success(data?.message);
    
     } catch (err: any) {
       toast.error(
@@ -76,6 +77,10 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
   {
     /* Render OTP Modal */
   }
+
+  // const goto = (url) => {
+	// 	window.open(url, '_blank');
+	// };
 
   return (
     <>
@@ -182,7 +187,7 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
                 </div>
               </div>
             ) : (
-              <OnboardingModal onClose={onClose}/>
+              <OnboardingModal onClose={onClose} user={newUser}/>
             )
           ) : (
             <>

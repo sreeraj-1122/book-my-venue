@@ -13,4 +13,5 @@ export const config = {
     sender: process.env.SENDER_EMAIL,
 
   }
+  
 };

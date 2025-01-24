@@ -134,7 +134,7 @@ const OtpModel: React.FC<Props> = ({ onPrev, onClose, email }) => {
           </div>
         </div>
       ) : (
-         <OnboardingModal onClose={closeAll}/>
+         <OnboardingModal onClose={closeAll} userEmail={email}/>
       )}
     </>
   );
