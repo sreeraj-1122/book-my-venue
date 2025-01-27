@@ -9,9 +9,9 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const { user, token } = useSelector((state: RootState) => state.auth);
-  console.log("User:", user);
+  // console.log("User:", user);
 
-  console.log(`user nav ${user} ,--, token: ${token}`);
+  // console.log(`user nav ${user} ,--, token: ${token}`);
   const routes = [
     { name: "My Booking", path: "/my-booking" },
     { name: "Profile", path: "/profile" },

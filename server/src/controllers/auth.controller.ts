@@ -6,6 +6,8 @@ import OTP from '../models/otp.model';
 import { sendOTPEmail } from '../utils/email';
 import { verifyGoogleToken } from '../utils/google';
 import cloudinary from '../config/cloudinary';
+import e from 'cors';
+import { JWTService } from '../services';
 
 const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -48,103 +50,172 @@ export const sendOTP = async (req: Request, res: Response): Promise<void> => {
 
 export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp }: { email: string; otp: string } = req.body;
 
-    // Find OTP in database
+    // Find OTP document in the database
     const otpDoc = await OTP.findOne({
       email,
-      otp: otp,
-      expiresAt: { $gt: new Date() }
+      otp,
+      expiresAt: { $gt: new Date() }, // Ensure OTP is not expired
     });
 
     if (!otpDoc) {
-      res.status(400).json({ error: 'Invalid or expired OTP' });
-      return;
+       res.status(400).json({
+        status: 400,
+        success: false,
+        message: 'Invalid or expired OTP',
+      });
+      return
     }
 
-    // Create or update user
-    const user = await User.findOneAndUpdate(
-      { email },
-      { verified: true },
-      { upsert: true, new: true }
-    );
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      config.jwtSecret,
-      { expiresIn: '7d' }
-    );
+    if (!existingUser) {
+      // If user does not exist, return isNewUser response
+       res.status(200).json({
+        status: 200,
+        success: true,
+        message: 'Success',
+        data: { email, isNewUser: true },
+      });
+      return
+    }
 
-    // Delete used OTP
-    await OTP.deleteOne({ _id: otpDoc._id });
+    // Generate tokens for the existing user
+    const accessToken = JWTService.generateAccessToken({
+      id: existingUser._id.toString(),
+      email: existingUser.email,
+    });
+    const refreshToken = JWTService.generateRefreshToken({
+      id: existingUser._id.toString(),
+      email: existingUser.email,
+    });
 
-    res.cookie("authToken", token, {
+    // Set refresh token in a secure cookie
+    res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      sameSite: "strict",
+      sameSite: 'strict',
     });
-    res.json({
-      message: 'Signed in successfully',
-      token,
-      user
+
+    // Return response with user data and access token
+    res.status(200).json({
+      status: 200,
+      success: true,
+      message: 'Onboarding pending',
+      data: {
+        ...existingUser.toObject(), // Convert Mongoose document to plain object
+        accessToken,
+      },
     });
-  } catch (error) {
+
+    // Clean up OTP document
+    await OTP.deleteOne({ _id: otpDoc._id });
+  } catch (error: any) {
     console.error('Verify OTP error:', error);
-    res.status(500).json({ error: 'Failed to verify OTP' });
+    res.status(500).json({
+      status: 500,
+      success: false,
+      message: 'Failed to verify OTP',
+      error: error.message,
+    });
   }
 };
 
-export const googleSignIn = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { credential } = req.body;
 
-    // Verify Google token
-    const payload = await verifyGoogleToken(credential);
-    
-    if (!payload?.email) {
-      res.status(400).json({ error: 'Invalid Google account' });
-      return;
+export const createUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate and sanitize inputs (e.g., using Joi or express-validator)
+
+    // Check if the phone number already exists
+    if (req.body.phone) {
+      const existingPhone = await User.findOne({ phone: req.body.phone });
+      if (existingPhone) {
+        res.status(409).json({
+          message: 'Phone number already exists',
+          status: 409,
+          success: false,
+        });
+        return;
+      }
     }
 
-    // Split name into first and last names
-    const [firstName, ...lastNameParts] = payload.name?.split(' ') || [];
-    const lastName = lastNameParts.join(' '); // Handle cases where the last name has multiple parts
+    // Create the user
+    const newUser: any = await User.create({
+      ...req.body,
+    });
 
-    // Create or update user
-    const user = await User.findOneAndUpdate(
-      { email: payload.email },
-      {
-        firstName,
-        lastName,
-        picture: payload.picture,
-        googleId: payload.sub,
-        verified: true
-      },
-      { upsert: true, new: true }
-    );
+    // Generate tokens
+    const payload = { id: newUser._id, email: newUser.email };
+    const accessToken = JWTService.generateAccessToken(payload);
+    const refreshToken = JWTService.generateRefreshToken(payload);
+
+    // Send refresh token in secure cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      sameSite: 'strict',
+    });
+
+    // Send success response
+    res.status(201).json({
+      message: 'success',
+      data: { ...newUser.toObject(), accessToken },
+      status: 201,
+      success: true,
+    });
+  } catch (error: any) {
+    console.error('Create User Error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: error.message,
+    });
+  }
+};
+
+
+export const googleSignIn = async (req: Request, res: Response): Promise<any> => {
+  try {
+    console.log(req.body);
+
+    const { email, firstName, lastName, picture } = req.body;
+
+    // Check if the user exists in the database
+    const existingUser = await User.findOne({ email });
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { email }, // You can add more payload data as needed
       config.jwtSecret,
       { expiresIn: '7d' }
     );
 
-    res.json({
-      message: 'Signed in successfully',
-      token,
-      user: {
-        _id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        picture: user.picture,
-        verified: user.verified
-      }
-    });
+    if (!existingUser) {
+      // If the user does not exist, respond with isNewUser flag and token
+      return res.status(200).json({
+        message: 'success',
+        data: { email, firstName, lastName, picture, isNewUser: true, token },
+        status: 200,
+        success: true,
+      });
+    } else {
+      // Respond with the existing user data and token
+      return res.status(200).json({
+        message: 'Google Login User',
+        status: 200,
+        success: true,
+        data: {
+          email: existingUser.email,
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          picture: existingUser.picture,
+          role:existingUser.role, 
+          token,
+        },
+      });
+    }
   } catch (error) {
     console.error('Google sign-in error:', error);
-    res.status(500).json({ error: 'Failed to sign in with Google' });
+    return res.status(500).json({ error: 'Failed to sign in with Google' });
   }
 };
 

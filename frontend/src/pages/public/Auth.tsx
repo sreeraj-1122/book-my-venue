@@ -7,18 +7,27 @@ declare global {
 import React, { useState } from "react";
 import { IoMdClose } from "react-icons/io";
 import { GoogleLogin } from "@react-oauth/google";
-import api from "../../utils/api";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../redux/slices/authSlice";
 import toast from "react-hot-toast";
 import OtpModel from "./OtpModel";
 import OnboardingModal from "./OnboardingModal";
+import { axiosInstance } from "../../services/axios.service";
+import { jwtDecode } from 'jwt-decode';
+import { ROLES } from "../../components/constants/roles";
+import { handleLoginSuccess } from "../../services/user.service";
+import { useNavigate } from "react-router-dom";
 
 interface AuthProps {
   onClose: () => void;
   isOpen: boolean;
 }
-
+interface DecodedToken {
+  email: string;
+  family_name: string;
+  given_name: string;
+  picture: string;
+}
 const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -27,19 +36,33 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
   const [isNewUser, setIsNewUser] = useState<boolean>(false);
   const [newUser, setNewUser] = useState({});
   const dispatch = useDispatch();
+	const navigate = useNavigate();
 
-  const handleGoogleSignIn = async (credentialResponse: any) => {
+  const handleGoogleSignIn = async (response: any) => {
     try {
-      const { credential } = credentialResponse;
+      const { email, family_name, given_name, picture } = jwtDecode<DecodedToken>(response?.credential);
 
-      const { data } = await api.post("/api/auth/google", {
-        credential,
-      });
-      console.log(data);
-      dispatch(setUser({ user: data?.user, token: data?.token }));
-      setNewUser(data?.user)
-      setIsNewUser(true);
-      toast.success(data?.message);
+      const {
+				data: { data },
+			} = await axiosInstance.post('/api/auth/google', {
+				email: email,
+				firstName: given_name,
+				lastName: family_name,
+				picture: picture,
+			});
+      if (data.isNewUser) {
+				setNewUser(data);
+				setIsNewUser(true);
+			} else {
+				handleLoginSuccess(data);
+				dispatch(setUser(data));
+				if (data.role === ROLES.OWNER) {
+					navigate('/owner/property');
+				} else {
+					onClose();
+				}
+			}
+     
    
     } catch (err: any) {
       toast.error(
@@ -65,8 +88,7 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
 
     setLoading(true);
     try {
-      const response = await api.post("/api/auth/send-otp", { email });
-      console.log(response.data);
+      await axiosInstance.post("/api/auth/send-otp", { email });
       setIsOtpSent(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to send OTP.");
@@ -182,6 +204,7 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
                     }}
                     text="continue_with"
                     shape="rectangular"
+                    useOneTap
                     size="large"
                   />
                 </div>

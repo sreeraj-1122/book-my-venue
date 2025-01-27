@@ -3,12 +3,13 @@ import * as authController from '../controllers/auth.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 import upload from '../middleware/upload'; // Import multer upload middleware
 
-const router = express.Router();
+const authRouter = express.Router();
 
-router.post('/send-otp', authController.sendOTP);
-router.post('/verify-otp', authController.verifyOTP);
-router.post('/google', authController.googleSignIn);
-router.post('/update', authenticateToken, upload.single('picture'), authController.updateUser);
-router.get('/me', authenticateToken, authController.getMe);
+authRouter.post('/send-otp', authController.sendOTP);
+authRouter.post('/verify-otp', authController.verifyOTP);
+authRouter.post('/', authController.createUser);
+authRouter.post('/google', authController.googleSignIn);
+authRouter.post('/update', authenticateToken, upload.single('picture'), authController.updateUser);
+authRouter.get('/me', authenticateToken, authController.getMe);
 
-export default router;
+export default authRouter;

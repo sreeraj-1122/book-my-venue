@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import cookieParser from "cookie-parser";
 
 import { config } from './config';
-import authRoutes from './routes/auth.routes';
+import router from './routes';
 const app = express();
 
 app.use(
@@ -15,7 +15,8 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-app.use('/api/auth', authRoutes);
+app.use(config.API_VERSION_URL, router);
+
 
 const mongoUri = config.mongoUri;
 
@@ -31,6 +32,6 @@ mongoose.connect(mongoUri)
     process.exit(1); 
   });
 
-app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
+app.listen(config.SERVER.PORT, () => {
+  console.log(`Server running on port ${config.SERVER.PORT}`);
 });

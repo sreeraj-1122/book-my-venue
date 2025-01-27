@@ -3,12 +3,11 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface User {
   _id: string;
   email: string;
-  name?: string; 
-  picture?: string; 
+  name?: string;
+  picture?: string;
   verified: boolean;
   googleId?: string;
 }
-
 
 interface AuthState {
   user: User | null;
@@ -16,8 +15,8 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
-  token: localStorage.getItem('token') || null,
+  user: null,
+  token: localStorage.getItem('token'),
 };
 
 const authSlice = createSlice({
@@ -25,20 +24,30 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action: PayloadAction<{ user: User; token: string }>) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
-      localStorage.setItem('token', action.payload.token);
+      const { user, token } = action.payload;
+      state.user = user;
+      state.token = token;
+
+      // Save token to localStorage
+      localStorage.setItem('token', token);
     },
-    removeUser: (state) => {
+    clearUser: (state) => {
       state.user = null;
       state.token = null;
-      localStorage.removeItem('user');
+
+      // Remove token and role from localStorage
       localStorage.removeItem('token');
+      localStorage.removeItem('role');
     },
   },
 });
 
-export const { setUser, removeUser } = authSlice.actions;
+// Actions
+export const { setUser, clearUser } = authSlice.actions;
 
+// Selectors
+export const selectUser = (state: { auth: AuthState }) => state.auth.user;
+export const selectToken = (state: { auth: AuthState }) => state.auth.token;
+
+// Reducer
 export default authSlice.reducer;

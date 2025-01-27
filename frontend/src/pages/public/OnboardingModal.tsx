@@ -24,7 +24,6 @@ const OnboardingModal: React.FC<Props> = ({ onClose,userEmail,user }) => {
    phone: '',
    role: null
  });
- console.log(formData)
  const [picture, setPicture] = useState<File | null>(null);
  const [roleError, setRoleError] = useState(false);
 
