@@ -125,7 +125,6 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Validate and sanitize inputs (e.g., using Joi or express-validator)
 
     // Check if the phone number already exists
     if (req.body.phone) {
