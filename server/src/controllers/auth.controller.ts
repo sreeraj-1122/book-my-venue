@@ -92,19 +92,17 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       email: existingUser.email,
     });
 
-    // Set refresh token in a secure cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
     });
 
-    // Return response with user data and access token
     res.status(200).json({
       status: 200,
       success: true,
       message: 'Onboarding pending',
       data: {
-        ...existingUser.toObject(), // Convert Mongoose document to plain object
+        ...existingUser.toObject(), 
         accessToken,
       },
     });
