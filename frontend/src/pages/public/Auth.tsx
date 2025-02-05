@@ -28,6 +28,10 @@ interface DecodedToken {
   given_name: string;
   picture: string;
 }
+interface newWindow{
+  url:any
+}
+
 const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -88,7 +92,7 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
 
     setLoading(true);
     try {
-      await axiosInstance.post("/api/auth/send-otp", { email });
+      await axiosInstance.post("/auth/send-otp", { email });
       setIsOtpSent(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || "Failed to send OTP.");
@@ -100,9 +104,9 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
     /* Render OTP Modal */
   }
 
-  // const goto = (url) => {
-	// 	window.open(url, '_blank');
-	// };
+  const goto = (url:string) => {
+		window.open(url, '_blank');
+	};
 
   return (
     <>
@@ -165,11 +169,11 @@ const Auth: React.FC<AuthProps> = ({ onClose, isOpen }) => {
                     />
                     <p className="text-sm text-gray-600">
                       I have read and understood the{" "}
-                      <a href="#" className="text-primary underline">
+                      <a href="#" className="text-primary underline" onClick={() => goto('/privacy-policy')}>
                         privacy policy
                       </a>{" "}
                       and the{" "}
-                      <a href="#" className="text-primary underline">
+                      <a href="#" className="text-primary underline" onClick={() => goto('/terms-of-service')} >
                         terms of service
                       </a>
                       .

@@ -5,6 +5,7 @@ import api from "../../utils/api";
 import { setUser } from "../../redux/slices/authSlice";
 import toast from "react-hot-toast";
 import OnboardingModal from "./OnboardingModal";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   onPrev: () => void;
@@ -16,8 +17,9 @@ const OtpModel: React.FC<Props> = ({ onPrev, onClose, email }) => {
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState<boolean>(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
-
-  const dispatch = useDispatch();
+  const navigate = useNavigate();
+	const [newUser, setNewUser] = useState({});
+	const dispatch = useDispatch();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -57,7 +59,7 @@ const OtpModel: React.FC<Props> = ({ onPrev, onClose, email }) => {
 
     setLoading(true);
     try {
-      const response = await api.post("/api/auth/verify-otp", {
+      const response = await api.post("/auth/verify-otp", {
         email,
         otp: otpCode,
       });
