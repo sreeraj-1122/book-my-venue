@@ -4,7 +4,6 @@ import { FaHome, FaUser } from "react-icons/fa";
 import Tooltip from "../../components/common/Tooltip";
 type Props = {
   onClose: () => void;
-  userEmail?: string;
   user?: {};
 };
 type OnboardingFormData = {
@@ -12,10 +11,9 @@ type OnboardingFormData = {
  lastName: string;
  phone: string;
  role: 'CUSTOMER' | 'OWNER' | null;
- picture?: File;
 };
 
-const OnboardingModal: React.FC<Props> = ({ onClose,userEmail,user }) => {
+const OnboardingModal: React.FC<Props> = ({ onClose,user }) => {
   console.log(user);
   
  const [formData, setFormData] = useState<OnboardingFormData>({
@@ -24,7 +22,6 @@ const OnboardingModal: React.FC<Props> = ({ onClose,userEmail,user }) => {
    phone: '',
    role: null
  });
- const [picture, setPicture] = useState<File | null>(null);
  const [roleError, setRoleError] = useState(false);
 
  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,34 +33,16 @@ const OnboardingModal: React.FC<Props> = ({ onClose,userEmail,user }) => {
    setFormData(prev => ({ ...prev, role }));
    setRoleError(false);
  };
-
- const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-   if (e.target.files && e.target.files[0]) {
-     setPicture(e.target.files[0]);
-   }
- };
-
+ 
  const handleSubmit = async (e: FormEvent) => {
    e.preventDefault();
    if (!formData.role) {
      setRoleError(true);
      return;
    }
-
-   const submitData = new FormData();
-   Object.keys(formData).forEach(key => {
-     if (formData[key as keyof OnboardingFormData] !== null) {
-       submitData.append(key, formData[key as keyof OnboardingFormData] as string);
-     }
-   });
-   console.log(submitData)
-
-   if (picture) {
-     submitData.append('picture', picture);
-   }
-
+ 
    try {
-     const response = await axios.post('/api/auth/update', submitData, {
+     const response = await axios.post('/auth/ ', formData, {
        headers: { 'Content-Type': 'multipart/form-data' },
        withCredentials: true,
      });
@@ -151,7 +130,6 @@ const OnboardingModal: React.FC<Props> = ({ onClose,userEmail,user }) => {
                type="email"
                id="email"
                name="email"
-               value={userEmail}
                className="w-full mt-2 border p-2 rounded-md"
                readOnly
              />
@@ -203,19 +181,7 @@ const OnboardingModal: React.FC<Props> = ({ onClose,userEmail,user }) => {
                placeholder="Mobile number"
              />
            </div>
-           <div className="mt-4">
-             <label htmlFor="picture" className="block text-sm font-medium text-gray-700">
-               Profile Image (Optional)
-             </label>
-             <input
-               type="file"
-               id="picture"
-               name="picture"
-               accept="image/*"
-               onChange={handleFileUpload}
-               className="w-full mt-2 border p-2 rounded-md"
-             />
-           </div>
+           
            <button
              type="submit"
              className="w-full bg-primary text-white p-2 rounded-md hover:bg-primary-dark transition duration-300"

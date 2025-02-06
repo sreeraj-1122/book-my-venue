@@ -1,7 +1,7 @@
 // import { axiosInstance, axiosPrivate } from './axios.service';
 
 export interface UserData {
-  token: string;
+  accessToken: string;
   role: string;
 }
 
@@ -38,6 +38,6 @@ export interface UserData {
 // }
 
 export const handleLoginSuccess = (userData: UserData): void => {
-  localStorage.setItem('token', userData.token);
+  localStorage.setItem('token', userData.accessToken);
   localStorage.setItem('role', userData.role);
 };

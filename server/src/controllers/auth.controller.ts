@@ -75,7 +75,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       // If user does not exist, return isNewUser response
        res.status(200).json({
         status: 200,
-        success: true,
+        success: true,  
         message: 'Success',
         data: { email, isNewUser: true },
       });

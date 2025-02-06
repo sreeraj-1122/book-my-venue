@@ -6,6 +6,8 @@ import { setUser } from "../../redux/slices/authSlice";
 import toast from "react-hot-toast";
 import OnboardingModal from "./OnboardingModal";
 import { useNavigate } from "react-router-dom";
+import { handleLoginSuccess } from "../../services/user.service";
+import { ROLES } from "../../components/constants/roles";
 
 type Props = {
   onPrev: () => void;
@@ -63,11 +65,19 @@ const OtpModel: React.FC<Props> = ({ onPrev, onClose, email }) => {
         email,
         otp: otpCode,
       });
-      console.log(response.data.user);
-      dispatch(
-        setUser({ user: response.data.user, token: response.data.token })
-      );
-      setShowOnboarding(true);
+      console.log(response.data)
+      if (response.data.data.isNewUser && response.data.data.email) {
+				setNewUser(response.data.data);
+				setShowOnboarding(true);
+			} else {
+				handleLoginSuccess(response.data.data);
+				if (response.data.data.role === ROLES.OWNER) {
+					navigate('/owner/property');
+				} else {
+					closeAll();
+				}
+				dispatch(setUser(response.data.data));
+			}
       toast.success(response.data.message);
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "Failed to verify OTP.");
@@ -136,7 +146,7 @@ const OtpModel: React.FC<Props> = ({ onPrev, onClose, email }) => {
           </div>
         </div>
       ) : (
-         <OnboardingModal onClose={closeAll} userEmail={email}/>
+				showOnboarding && <OnboardingModal user={newUser} onClose={closeAll} />
       )}
     </>
   );
